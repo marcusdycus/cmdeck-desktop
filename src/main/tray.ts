@@ -11,6 +11,12 @@ interface TrayCallbacks {
 }
 
 export function createTray(callbacks: TrayCallbacks): { updateMenu: () => void } {
+  // Destroy existing tray to prevent duplicates
+  if (tray) {
+    tray.destroy();
+    tray = null;
+  }
+
   const iconPath = path.join(__dirname, "../../assets/tray-icon.png");
   let icon = nativeImage.createFromPath(iconPath);
 
