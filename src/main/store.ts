@@ -12,7 +12,7 @@ interface StoreSchema {
 
 const defaults: StoreSchema = {
   isLoggedIn: false,
-  idleTimeout: 300,
+  idleTimeout: 30,
   screensaverEnabled: true,
   launchAtStartup: true,
   lastMode: "wallpaper",
