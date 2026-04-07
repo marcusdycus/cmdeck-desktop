@@ -119,10 +119,12 @@
     updateClock();
     setInterval(updateClock, 1000);
 
-    // Dismiss on any input
-    document.addEventListener('mousemove', () => window.close());
-    document.addEventListener('keydown', () => window.close());
-    document.addEventListener('mousedown', () => window.close());
+    // Dismiss on input — delay to ignore the initial mouse jitter from window appearing
+    let ready = false;
+    setTimeout(() => { ready = true; }, 1500);
+    document.addEventListener('mousemove', () => { if (ready) window.close(); });
+    document.addEventListener('keydown', () => { if (ready) window.close(); });
+    document.addEventListener('mousedown', () => { if (ready) window.close(); });
   </script>
 </body>
 </html>

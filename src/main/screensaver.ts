@@ -1,5 +1,4 @@
 import { BrowserWindow, powerMonitor } from "electron";
-import path from "path";
 import { store } from "./store";
 
 let screensaverWin: BrowserWindow | null = null;
@@ -14,7 +13,7 @@ export function startIdleDetection(onIdle: () => void, onActive: () => void) {
     if (idleTime >= threshold && !screensaverWin) {
       onIdle();
     }
-  }, 10000); // Check every 10 seconds
+  }, 5000); // Check every 5 seconds
 
   powerMonitor.on("user-did-become-active", () => {
     if (screensaverWin) onActive();
@@ -40,13 +39,14 @@ export function showScreensaver() {
     },
   });
 
-  screensaverWin.loadFile(
-    path.join(__dirname, "../../src/renderer/screensaver.html")
-  );
+  // Load the read-only dashboard as the screensaver
+  screensaverWin.loadURL("https://cmdeck.io/wallpaper");
 
-  // Dismiss on any mouse movement or keypress
+  // Dismiss on input — delay to ignore mouse jitter from window appearing
+  let ready = false;
+  setTimeout(() => { ready = true; }, 1500);
   screensaverWin.webContents.on("before-input-event", () => {
-    dismissScreensaver();
+    if (ready) dismissScreensaver();
   });
 }
 
