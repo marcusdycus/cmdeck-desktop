@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command Deck Screensaver</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1A1A1A;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: none;
+  }
+
+  /* Noise texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  .clock {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(100px, 15vw, 200px);
+    color: #F0E8D8;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+  }
+
+  .clock .colon {
+    color: #C4531A;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #8A8A8A;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .accent-bar {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #C4531A, #E8902B);
+    border-radius: 2px;
+    margin-top: 24px;
+    animation: breathe 4s ease-in-out infinite;
+    position: relative;
+    z-index: 1;
+  }
+
+  .watermark {
+    position: fixed;
+    bottom: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: #333;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    z-index: 1;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes breathe {
+    0%, 100% { width: 60px; opacity: 0.6; }
+    50% { width: 120px; opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <div class="clock" id="clock">
+    <span id="hours">00</span><span class="colon">:</span><span id="minutes">00</span>
+  </div>
+  <div class="date" id="date"></div>
+  <div class="accent-bar"></div>
+  <div class="watermark">cmdeck.io</div>
+
+  <script>
+    function updateClock() {
+      const now = new Date();
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const displayH = h % 12 || 12;
+
+      document.getElementById('hours').textContent = String(displayH).padStart(2, '0');
+      document.getElementById('minutes').textContent = String(m).padStart(2, '0');
+
+      document.getElementById('date').textContent = now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      }).toUpperCase() + '  ' + ampm;
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // Dismiss on any input
+    document.addEventListener('mousemove', () => window.close());
+    document.addEventListener('keydown', () => window.close());
+    document.addEventListener('mousedown', () => window.close());
+  </script>
+</body>
+</html>

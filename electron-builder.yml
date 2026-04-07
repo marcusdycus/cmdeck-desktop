@@ -1,0 +1,44 @@
+appId: io.cmdeck.desktop
+productName: Command Deck
+copyright: Copyright 2026 Marcus Dycus
+
+directories:
+  output: release
+  buildResources: assets
+
+files:
+  - dist/**/*
+  - src/renderer/**/*
+  - assets/**/*
+
+mac:
+  category: public.app-category.utilities
+  target:
+    - target: dmg
+      arch: [universal]
+    - target: zip
+      arch: [universal]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+
+linux:
+  target:
+    - target: AppImage
+    - target: deb
+  category: Utility
+
+publish:
+  provider: github
+  owner: marcusdycus
+  repo: cmdeck-desktop
