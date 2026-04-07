@@ -1,6 +1,5 @@
 import { app, globalShortcut, ipcMain } from "electron";
 import { store } from "./store";
-import { checkAuthStatus, createLoginWindow, logout } from "./auth";
 import { createMainWindow, getMainWindow, reloadMainWindow } from "./wallpaper";
 import { createTray } from "./tray";
 import {
@@ -18,19 +17,6 @@ function toggleFullscreen() {
   win.setFullScreen(!win.isFullScreen());
 }
 
-async function startApp() {
-  const isLoggedIn = await checkAuthStatus();
-
-  if (!isLoggedIn) {
-    createLoginWindow(() => {
-      launchDashboard();
-    });
-    return;
-  }
-
-  launchDashboard();
-}
-
 function launchDashboard() {
   const win = createMainWindow();
   win.show();
@@ -38,10 +24,12 @@ function launchDashboard() {
   trayController = createTray({
     onToggleFullscreen: toggleFullscreen,
     onRefresh: reloadMainWindow,
-    onLogout: async () => {
-      await logout();
-      getMainWindow()?.close();
-      createLoginWindow(() => launchDashboard());
+    onLogout: () => {
+      // Navigate to cmdeck.io logout, then back to login
+      const win = getMainWindow();
+      if (win && !win.isDestroyed()) {
+        win.loadURL("https://cmdeck.io/api/auth/signout");
+      }
     },
   });
 
@@ -57,18 +45,13 @@ function launchDashboard() {
 app.whenReady().then(() => {
   ipcMain.handle("get-version", () => app.getVersion());
   ipcMain.on("toggle-fullscreen", toggleFullscreen);
-  ipcMain.on("logout", async () => {
-    await logout();
-    getMainWindow()?.close();
-    createLoginWindow(() => launchDashboard());
-  });
 
   app.setLoginItemSettings({
     openAtLogin: store.get("launchAtStartup"),
     openAsHidden: true,
   });
 
-  startApp();
+  launchDashboard();
 });
 
 app.on("window-all-closed", () => {
@@ -83,7 +66,7 @@ app.on("will-quit", () => {
 app.on("activate", () => {
   const win = getMainWindow();
   if (!win || win.isDestroyed()) {
-    startApp();
+    launchDashboard();
   } else {
     win.show();
   }
