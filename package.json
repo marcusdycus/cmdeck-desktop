@@ -1,7 +1,7 @@
 {
   "name": "cmdeck-desktop",
-  "version": "1.0.0",
-  "description": "Command Deck Desktop — Live wallpaper and screensaver for cmdeck.io",
+  "version": "1.0.1",
+  "description": "Command Deck Desktop — Native dashboard app for cmdeck.io",
   "main": "dist/main/index.js",
   "author": "Marcus Dycus",
   "license": "MIT",
@@ -20,8 +20,5 @@
     "electron": "^41.1.1",
     "electron-builder": "^25.1.0",
     "typescript": "^5.6.0"
-  },
-  "optionalDependencies": {
-    "electron-as-wallpaper": "^3.1.0"
   }
 }

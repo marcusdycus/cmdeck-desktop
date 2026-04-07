@@ -24,19 +24,15 @@ mac:
 win:
   target:
     - target: nsis
-      arch: [x64]
+      arch: [x64, arm64]
     - target: portable
+      arch: [x64]
+  icon: build/icon.ico
 
 nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
-
-linux:
-  target:
-    - target: AppImage
-    - target: deb
-  category: Utility
 
 publish:
   provider: github
