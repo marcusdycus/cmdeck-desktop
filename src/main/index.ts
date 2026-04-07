@@ -1,14 +1,7 @@
 import { app, globalShortcut, ipcMain } from "electron";
 import { store } from "./store";
 import { checkAuthStatus, createLoginWindow, logout } from "./auth";
-import {
-  createWallpaperWindow,
-  createEditWindow,
-  attachWallpaper,
-  detachWallpaper,
-  getWallpaperWindow,
-  getEditWindow,
-} from "./wallpaper";
+import { createMainWindow, getMainWindow, reloadMainWindow } from "./wallpaper";
 import { createTray } from "./tray";
 import {
   startIdleDetection,
@@ -17,40 +10,12 @@ import {
   stopIdleDetection,
 } from "./screensaver";
 
-let mode: "wallpaper" | "windowed" = "wallpaper";
 let trayController: { updateMenu: () => void } | null = null;
 
-function toggleMode() {
-  if (mode === "wallpaper") {
-    // Switch to windowed edit mode
-    detachWallpaper();
-    getWallpaperWindow()?.hide();
-
-    let editWin = getEditWindow();
-    if (!editWin || editWin.isDestroyed()) {
-      editWin = createEditWindow();
-    }
-    editWin.show();
-    editWin.focus();
-
-    mode = "windowed";
-  } else {
-    // Switch back to wallpaper mode
-    getEditWindow()?.hide();
-
-    const wallpaperWin = getWallpaperWindow();
-    if (wallpaperWin) {
-      // Reload to pick up any changes made in edit mode
-      wallpaperWin.loadURL("https://cmdeck.io/wallpaper");
-      wallpaperWin.show();
-      attachWallpaper();
-    }
-
-    mode = "wallpaper";
-  }
-
-  store.set("lastMode", mode);
-  trayController?.updateMenu();
+function toggleFullscreen() {
+  const win = getMainWindow();
+  if (!win || win.isDestroyed()) return;
+  win.setFullScreen(!win.isFullScreen());
 }
 
 async function startApp() {
@@ -58,60 +23,53 @@ async function startApp() {
 
   if (!isLoggedIn) {
     createLoginWindow(() => {
-      startWallpaper();
+      launchDashboard();
     });
     return;
   }
 
-  startWallpaper();
+  launchDashboard();
 }
 
-function startWallpaper() {
-  createWallpaperWindow();
+function launchDashboard() {
+  const win = createMainWindow();
+  win.show();
 
-  // Small delay to let the page load before attaching
-  setTimeout(() => {
-    attachWallpaper();
-  }, 2000);
-
-  // Set up tray
   trayController = createTray({
-    onToggleMode: toggleMode,
-    onRefresh: () => {
-      getWallpaperWindow()?.loadURL("https://cmdeck.io/wallpaper");
-    },
+    onToggleFullscreen: toggleFullscreen,
+    onRefresh: reloadMainWindow,
     onLogout: async () => {
       await logout();
-      getWallpaperWindow()?.close();
-      getEditWindow()?.close();
-      createLoginWindow(() => startWallpaper());
+      getMainWindow()?.close();
+      createLoginWindow(() => launchDashboard());
     },
-    getMode: () => mode,
   });
 
-  // Set up screensaver
   startIdleDetection(
     () => showScreensaver(),
     () => dismissScreensaver()
   );
 
-  // Register global hotkey
-  globalShortcut.register("CommandOrControl+Shift+D", toggleMode);
+  globalShortcut.register("CommandOrControl+Shift+D", toggleFullscreen);
 }
 
-// IPC handlers
-ipcMain.handle("get-mode", () => mode);
-ipcMain.handle("get-version", () => app.getVersion());
-ipcMain.on("toggle-mode", toggleMode);
-ipcMain.on("logout", async () => {
-  await logout();
-  getWallpaperWindow()?.close();
-  getEditWindow()?.close();
-  createLoginWindow(() => startWallpaper());
-});
-
 // App lifecycle
-app.whenReady().then(startApp);
+app.whenReady().then(() => {
+  ipcMain.handle("get-version", () => app.getVersion());
+  ipcMain.on("toggle-fullscreen", toggleFullscreen);
+  ipcMain.on("logout", async () => {
+    await logout();
+    getMainWindow()?.close();
+    createLoginWindow(() => launchDashboard());
+  });
+
+  app.setLoginItemSettings({
+    openAtLogin: store.get("launchAtStartup"),
+    openAsHidden: true,
+  });
+
+  startApp();
+});
 
 app.on("window-all-closed", () => {
   // Don't quit — keep running in tray
@@ -122,15 +80,11 @@ app.on("will-quit", () => {
   stopIdleDetection();
 });
 
-// macOS: re-open when clicking dock icon
 app.on("activate", () => {
-  if (!getWallpaperWindow() && !getEditWindow()) {
+  const win = getMainWindow();
+  if (!win || win.isDestroyed()) {
     startApp();
+  } else {
+    win.show();
   }
-});
-
-// Auto-launch on startup
-app.setLoginItemSettings({
-  openAtLogin: store.get("launchAtStartup"),
-  openAsHidden: true,
 });

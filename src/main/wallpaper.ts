@@ -2,49 +2,41 @@ import { BrowserWindow, screen } from "electron";
 import path from "path";
 
 const BASE_URL = "https://cmdeck.io";
-let wallpaperWin: BrowserWindow | null = null;
-let editWin: BrowserWindow | null = null;
-let isAttached = false;
+let mainWin: BrowserWindow | null = null;
 
-export function createWallpaperWindow(): BrowserWindow {
+// CSS injected into the remote page to make the title bar draggable
+// and prevent traffic light buttons from covering content
+const TITLEBAR_CSS = `
+  /* Make the header area draggable for macOS window movement */
+  header, [class*="header"], nav {
+    -webkit-app-region: drag;
+    padding-left: 78px !important;
+  }
+
+  /* Buttons/links inside the header should still be clickable */
+  header a, header button, header input, header select,
+  nav a, nav button, nav input, nav select,
+  [class*="header"] a, [class*="header"] button,
+  [class*="header"] input, [class*="header"] select {
+    -webkit-app-region: no-drag;
+  }
+
+  /* Top-level body padding so nothing hides behind traffic lights */
+  body {
+    padding-top: 2px;
+  }
+`;
+
+export function createMainWindow(): BrowserWindow {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
-  wallpaperWin = new BrowserWindow({
-    x: 0,
-    y: 0,
-    width,
-    height,
-    frame: false,
-    transparent: false,
-    skipTaskbar: true,
-    resizable: false,
-    focusable: false,
-    fullscreen: true,
-    backgroundColor: "#1A1A1A",
-    webPreferences: {
-      preload: path.join(__dirname, "../preload/index.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      partition: "persist:cmdeck",
-    },
-  });
-
-  wallpaperWin.loadURL(`${BASE_URL}/wallpaper`);
-
-  wallpaperWin.on("closed", () => {
-    wallpaperWin = null;
-  });
-
-  return wallpaperWin;
-}
-
-export function createEditWindow(): BrowserWindow {
-  editWin = new BrowserWindow({
-    width: 1280,
-    height: 800,
+  mainWin = new BrowserWindow({
+    width: Math.round(width * 0.85),
+    height: Math.round(height * 0.85),
     title: "Command Deck",
     titleBarStyle: "hiddenInset",
+    trafficLightPosition: { x: 12, y: 12 },
     backgroundColor: "#1A1A1A",
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
@@ -54,63 +46,26 @@ export function createEditWindow(): BrowserWindow {
     },
   });
 
-  editWin.loadURL(`${BASE_URL}/deck`);
+  mainWin.loadURL(`${BASE_URL}/deck`);
 
-  editWin.on("closed", () => {
-    editWin = null;
+  // Inject titlebar CSS after each page load
+  mainWin.webContents.on("did-finish-load", () => {
+    mainWin?.webContents.insertCSS(TITLEBAR_CSS);
   });
 
-  return editWin;
+  mainWin.on("closed", () => {
+    mainWin = null;
+  });
+
+  return mainWin;
 }
 
-export async function attachWallpaper(): Promise<void> {
-  if (!wallpaperWin || isAttached) return;
+export function getMainWindow(): BrowserWindow | null {
+  return mainWin;
+}
 
-  if (process.platform === "win32") {
-    try {
-      const { attach } = await import("electron-as-wallpaper");
-      attach(wallpaperWin);
-      isAttached = true;
-    } catch (err) {
-      console.error("Failed to attach wallpaper (Windows):", err);
-    }
-  } else if (process.platform === "darwin") {
-    // Place window at desktop level
-    wallpaperWin.setVisibleOnAllWorkspaces(true, {
-      visibleOnFullScreen: true,
-    });
-    wallpaperWin.setAlwaysOnTop(true, "desktop");
-    wallpaperWin.setFocusable(false);
-    isAttached = true;
+export function reloadMainWindow(): void {
+  if (mainWin && !mainWin.isDestroyed()) {
+    mainWin.loadURL(`${BASE_URL}/deck`);
   }
-}
-
-export async function detachWallpaper(): Promise<void> {
-  if (!wallpaperWin || !isAttached) return;
-
-  if (process.platform === "win32") {
-    try {
-      const { detach } = await import("electron-as-wallpaper");
-      detach(wallpaperWin);
-    } catch (err) {
-      console.error("Failed to detach wallpaper (Windows):", err);
-    }
-  } else if (process.platform === "darwin") {
-    wallpaperWin.setAlwaysOnTop(false);
-    wallpaperWin.setFocusable(true);
-  }
-
-  isAttached = false;
-}
-
-export function getWallpaperWindow(): BrowserWindow | null {
-  return wallpaperWin;
-}
-
-export function getEditWindow(): BrowserWindow | null {
-  return editWin;
-}
-
-export function isWallpaperAttached(): boolean {
-  return isAttached;
 }

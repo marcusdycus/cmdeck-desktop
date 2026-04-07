@@ -1,22 +1,23 @@
 import { Tray, Menu, nativeImage, app, shell } from "electron";
 import path from "path";
+import { getMainWindow } from "./wallpaper";
 
 let tray: Tray | null = null;
 
 interface TrayCallbacks {
-  onToggleMode: () => void;
+  onToggleFullscreen: () => void;
   onRefresh: () => void;
   onLogout: () => void;
-  getMode: () => "wallpaper" | "windowed";
 }
 
 export function createTray(callbacks: TrayCallbacks): { updateMenu: () => void } {
-  const iconPath =
-    process.platform === "darwin"
-      ? path.join(__dirname, "../../assets/tray-icon.png")
-      : path.join(__dirname, "../../assets/tray-icon.png");
+  const iconPath = path.join(__dirname, "../../assets/tray-icon.png");
+  let icon = nativeImage.createFromPath(iconPath);
 
-  const icon = nativeImage.createFromPath(iconPath);
+  if (icon.isEmpty()) {
+    icon = nativeImage.createEmpty();
+  }
+
   if (process.platform === "darwin") {
     icon.setTemplateImage(true);
   }
@@ -29,12 +30,19 @@ export function createTray(callbacks: TrayCallbacks): { updateMenu: () => void }
       { label: "Command Deck", enabled: false },
       { type: "separator" },
       {
-        label:
-          callbacks.getMode() === "wallpaper"
-            ? "Switch to Edit Mode"
-            : "Switch to Wallpaper Mode",
+        label: "Show Dashboard",
+        click: () => {
+          const win = getMainWindow();
+          if (win && !win.isDestroyed()) {
+            win.show();
+            win.focus();
+          }
+        },
+      },
+      {
+        label: "Toggle Fullscreen",
         accelerator: "CommandOrControl+Shift+D",
-        click: callbacks.onToggleMode,
+        click: callbacks.onToggleFullscreen,
       },
       {
         label: "Open in Browser",
@@ -42,14 +50,14 @@ export function createTray(callbacks: TrayCallbacks): { updateMenu: () => void }
       },
       { type: "separator" },
       {
-        label: "Refresh Wallpaper",
+        label: "Refresh",
         click: callbacks.onRefresh,
       },
-      { type: "separator" },
       {
         label: "Sign Out",
         click: callbacks.onLogout,
       },
+      { type: "separator" },
       {
         label: "Quit",
         accelerator: process.platform === "darwin" ? "Cmd+Q" : undefined,
