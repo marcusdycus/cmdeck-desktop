@@ -43,6 +43,11 @@ export function showScreensaver() {
   // Load the read-only dashboard as the screensaver
   screensaverWin.loadURL("https://cmdeck.io/wallpaper");
 
+  // Hide cursor on screensaver
+  screensaverWin.webContents.on("did-finish-load", () => {
+    screensaverWin?.webContents.insertCSS("* { cursor: none !important; }");
+  });
+
   // Dismiss on input — delay to ignore mouse jitter from window appearing
   let ready = false;
   setTimeout(() => { ready = true; }, 1500);
