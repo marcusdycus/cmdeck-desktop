@@ -36,6 +36,7 @@ export function showScreensaver() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      partition: "persist:cmdeck",
     },
   });
 
