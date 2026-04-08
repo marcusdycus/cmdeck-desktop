@@ -44,10 +44,14 @@ export function showScreensaver() {
   screensaverWin.loadURL("https://cmdeck.io/wallpaper");
 
   // Dismiss on any input — delay to ignore mouse jitter from window appearing
-  let ready = false;
-  setTimeout(() => { ready = true; }, 1500);
-  screensaverWin.webContents.on("before-input-event", () => {
-    if (ready) dismissScreensaver();
+  screensaverWin.webContents.on("did-finish-load", () => {
+    screensaverWin?.webContents.executeJavaScript(`
+      let ready = false;
+      setTimeout(() => { ready = true; }, 1500);
+      document.addEventListener('mousemove', () => { if (ready) window.close(); });
+      document.addEventListener('mousedown', () => { if (ready) window.close(); });
+      document.addEventListener('keydown', () => { if (ready) window.close(); });
+    `);
   });
 }
 
