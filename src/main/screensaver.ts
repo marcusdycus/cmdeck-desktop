@@ -45,6 +45,7 @@ export function showScreensaver() {
 
   // Dismiss on any input — delay to ignore mouse jitter from window appearing
   screensaverWin.webContents.on("did-finish-load", () => {
+    screensaverWin?.webContents.insertCSS("* { cursor: none !important; }");
     screensaverWin?.webContents.executeJavaScript(`
       let ready = false;
       setTimeout(() => { ready = true; }, 1500);
